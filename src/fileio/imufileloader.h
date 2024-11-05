@@ -31,7 +31,7 @@ class ImuFileLoader : public FileLoader {
 public:
     ImuFileLoader() = delete;
     ImuFileLoader(const string &filename, int columns, int rate = 200) {
-        open(filename, columns, FileLoader::TEXT);
+        bool readSuccess=open(filename, columns, FileLoader::TEXT);
 
         dt_ = 1.0 / (double) rate;
 

@@ -25,6 +25,8 @@
 #include <iomanip>
 #include <iostream>
 #include <yaml-cpp/yaml.h>
+/////////////////////////////////c++17才有的头文件
+#include <filesystem>
 
 #include "common/angle.h"
 #include "fileio/filesaver.h"
@@ -37,6 +39,19 @@ bool loadConfig(YAML::Node &config, GINSOptions &options);
 void writeNavResult(double time, NavState &navstate, FileSaver &navfile, FileSaver &imuerrfile);
 void writeSTD(double time, Eigen::MatrixXd &cov, FileSaver &stdfile);
 
+std::string replaceSlashes(const std::string &input) {
+    std::string result;
+    for (char ch : input) {
+        if (ch == '/') {
+            result += '\\'; // 添加反斜杠
+            //result += '\\'; // 添加另一个反斜杠
+        } else {
+            result += ch; // 添加原字符
+        }
+    }
+    return result;
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc != 2) {
@@ -46,6 +61,13 @@ int main(int argc, char *argv[]) {
 
     std::cout << std::endl << "KF-GINS: An EKF-Based GNSS/INS Integrated Navigation System" << std::endl << std::endl;
     auto ts = absl::Now();
+
+    if (argc >= 2) 
+    {
+        std::string argvOut(*(argv + 1));
+        std::cout << "argv is:" << argvOut << std::endl;
+    }
+
 
     // 加载配置文件
     // load configuration file
@@ -77,6 +99,26 @@ int main(int argc, char *argv[]) {
         std::cout << "Failed when loading configuration. Please check the file path and output path!" << std::endl;
         return -1;
     }
+
+    // 用于识别是在windows下编译
+#ifdef _WIN32
+    {
+        // 获取当前工作目录
+        std::filesystem::path currentPath = std::filesystem::current_path();
+        std::string dirPath(currentPath.string());
+        dirPath += "\\";
+        // 在windows中才需要这样转化
+        std::string strTemp1 = replaceSlashes(imupath   );
+        std::string strTemp2 = replaceSlashes(gnsspath  );
+        std::string strTemp3 = replaceSlashes(outputpath);
+        strTemp1             = "." + strTemp1;
+        strTemp2             = "." + strTemp2;
+        strTemp3             = "." + strTemp3;
+        imupath              = dirPath + strTemp1;
+        gnsspath             = dirPath + strTemp2;
+        outputpath           = dirPath + strTemp3;
+    }
+#endif // _WIN32
 
     // imu数据配置，数据处理区间
     // imudata configuration， data processing interval
