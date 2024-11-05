@@ -54,6 +54,10 @@ std::string replaceSlashes(const std::string &input) {
 
 int main(int argc, char *argv[]) {
 
+    // argc：确定字符串数量
+    // argv：两个*，第一级指向字符串指针列表，第二级指向字符串
+    // argv：第一个字符串指向当前执行的程序的路径
+    // 第二个及以后才是参数
     if (argc != 2) {
         std::cout << "usage: KF-GINS kf-gins.yaml" << std::endl;
         return -1;
@@ -71,8 +75,9 @@ int main(int argc, char *argv[]) {
 
     // 加载配置文件
     // load configuration file
-    YAML::Node config;
+    YAML::Node config; // YAML库的类创建
     try {
+        // 使用ymal进行填充这个类，ymal用于代替json，具有json类似的格式
         config = YAML::LoadFile(argv[1]);
     } catch (YAML::Exception &exception) {
         std::cout << "Failed to read configuration file. Please check the path and format of the configuration file!"
@@ -92,6 +97,7 @@ int main(int argc, char *argv[]) {
     // load filepath configuration
     std::string imupath, gnsspath, outputpath;
     try {
+        // config使用map存储，重载了[]操作符，进行类似map操作
         imupath    = config["imupath"].as<std::string>();
         gnsspath   = config["gnsspath"].as<std::string>();
         outputpath = config["outputpath"].as<std::string>();
@@ -125,9 +131,9 @@ int main(int argc, char *argv[]) {
     int imudatalen, imudatarate;
     double starttime, endtime;
     try {
-        imudatalen  = config["imudatalen"].as<int>();
-        imudatarate = config["imudatarate"].as<int>();
-        starttime   = config["starttime"].as<double>();
+        imudatalen  = config["imudatalen"].as<int>(); // 读取的文件列数：7：时间戳，三个陀螺仪，三个加速度计
+        imudatarate = config["imudatarate"].as<int>(); // IMU原始数据频率
+        starttime   = config["starttime"].as<double>(); // 处理时间段，结束时间设置为-1时则处理至IMU文件结束
         endtime     = config["endtime"].as<double>();
     } catch (YAML::Exception &exception) {
         std::cout << "Failed when loading configuration. Please check the data length, data rate, and the process time!"
