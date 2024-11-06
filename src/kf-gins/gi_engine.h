@@ -30,10 +30,11 @@
 
 #include "kf_gins_types.h"
 
-class GIEngine {
+class GIEngine
+{
 
 public:
-    explicit GIEngine(GINSOptions &options);
+    explicit GIEngine(GINSOptions& options);
 
     ~GIEngine() = default;
 
@@ -45,12 +46,14 @@ public:
      * @param [in] compensate 是否补偿IMU误差
      *                        if compensate imu error to new imudata
      * */
-    void addImuData(const IMU &imu, bool compensate = false) {
+    void addImuData(const IMU& imu, bool compensate = false)
+    {
 
         imupre_ = imucur_;
         imucur_ = imu;
 
-        if (compensate) {
+        if (compensate)
+        {
             imuCompensate(imucur_);
         }
     }
@@ -61,7 +64,8 @@ public:
      * @param [in] gnss 新的GNSS数据
      *                  new gnssdata
      * */
-    void addGnssData(const GNSS &gnss) {
+    void addGnssData(const GNSS& gnss)
+    {
 
         gnssdata_ = gnss;
         // 暂不进行数据有效性检查，GNSS数据默认有效
@@ -73,7 +77,7 @@ public:
      * @brief 处理新的IMU数据
      *        process new imudata
      * */
-    void newImuProcess();
+    void newImuDataProcess();
 
     /**
      * @brief 内插增量形式的IMU数据到指定时刻
@@ -87,29 +91,32 @@ public:
      * @param [in,out] midimu    输出内插时刻的IMU数据
      *                           output imudata at given timestamp
      * */
-    static void imuInterpolate(const IMU &imu1, IMU &imu2, const double timestamp, IMU &midimu) {
+    static void imuInterpolate(const IMU& imu1, IMU& imu2, const double timestamp, IMU& midimu)
+    {
 
-        if (imu1.time > timestamp || imu2.time < timestamp) {
+        if (imu1.time > timestamp || imu2.time < timestamp)
+        {
             return;
         }
 
         double lamda = (timestamp - imu1.time) / (imu2.time - imu1.time);
 
-        midimu.time   = timestamp;
+        midimu.time = timestamp;
         midimu.dtheta = imu2.dtheta * lamda;
-        midimu.dvel   = imu2.dvel * lamda;
-        midimu.dt     = timestamp - imu1.time;
+        midimu.dvel = imu2.dvel * lamda;
+        midimu.dt = timestamp - imu1.time;
 
         imu2.dtheta = imu2.dtheta - midimu.dtheta;
-        imu2.dvel   = imu2.dvel - midimu.dvel;
-        imu2.dt     = imu2.dt - midimu.dt;
+        imu2.dvel = imu2.dvel - midimu.dvel;
+        imu2.dt = imu2.dt - midimu.dt;
     }
 
     /**
      * @brief 获取当前时间
      *        get current time
      * */
-    double timestamp() const {
+    double timestamp() const
+    {
         return timestamp_;
     }
 
@@ -123,7 +130,8 @@ public:
      * @brief 获取当前状态协方差
      *        get current state covariance
      * */
-    Eigen::MatrixXd getCovariance() {
+    Eigen::MatrixXd getCovariance()
+    {
         return Cov_;
     }
 
@@ -136,7 +144,7 @@ private:
      * @param [in] initstate_std 初始状态标准差
      *                           initial state std
      * */
-    void initialize(const NavState &initstate, const NavState &initstate_std);
+    void initialize(const NavState& initstate, const NavState& initstate_std);
 
     /**
      * @brief 当前IMU误差补偿到IMU数据中
@@ -144,7 +152,7 @@ private:
      * @param [in,out] imu 需要补偿的IMU数据
      *                     imudata to be compensated
      * */
-    void imuCompensate(IMU &imu);
+    void imuCompensate(IMU& imu);
 
     /**
      * @brief 判断是否需要更新,以及更新哪一时刻系统状态
@@ -174,14 +182,14 @@ private:
      * @param [in,out] imucur 当前时刻IMU数据
      *                        imudata at the current epoch
      * */
-    void insPropagation(IMU &imupre, IMU &imucur);
+    void insPropagation(IMU& imupre, IMU& imucur);
 
     /**
      * @brief 使用GNSS位置观测更新系统状态
      *        update state using gnss position
      * @param [in,out] gnssdata
      * */
-    void gnssUpdate(GNSS &gnssdata);
+    void gnssUpdate(GNSS& gnssdata);
 
     /**
      * @brief Kalman 预测,
@@ -191,7 +199,7 @@ private:
      * @param [in,out] Qd  传播噪声矩阵
      *                     propagation noise matrix
      * */
-    void EKFPredict(Eigen::MatrixXd &Phi, Eigen::MatrixXd &Qd);
+    void EKFPredict(Eigen::MatrixXd& Phi, Eigen::MatrixXd& Qd);
 
     /**
      * @brief Kalman 更新
@@ -203,7 +211,7 @@ private:
      * @param [in] R  观测噪声阵
      *                measurement noise matrix
      * */
-    void EKFUpdate(Eigen::MatrixXd &dz, Eigen::MatrixXd &H, Eigen::MatrixXd &R);
+    void EKFUpdate(Eigen::MatrixXd& dz, Eigen::MatrixXd& H, Eigen::MatrixXd& R);
 
     /**
      * @brief 反馈误差状态到当前状态
@@ -215,10 +223,13 @@ private:
      * @brief 检查协方差对角线元素是否都为正
      *        Check if covariance diagonal elements are all positive
      * */
-    void checkCov() {
+    void checkCov()
+    {
 
-        for (int i = 0; i < RANK; i++) {
-            if (Cov_(i, i) < 0) {
+        for (int i = 0; i < RANK; i++)
+        {
+            if (Cov_(i, i) < 0)
+            {
                 std::cout << "Covariance is negative at " << std::setprecision(10) << timestamp_ << " !" << std::endl;
                 std::exit(EXIT_FAILURE);
             }
@@ -252,7 +263,7 @@ private:
     Eigen::MatrixXd Qc_;
     Eigen::MatrixXd dx_;
 
-    const int RANK      = 21;
+    const int RANK = 21;
     const int NOISERANK = 18;
 
     // 状态ID和噪声ID

@@ -20,11 +20,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*
+* 这个主要是：惯性导航算法类：INSMech，速度更新、位置更新、姿态更新
+* 不包含滤波算法，根据gnss进行更新
+*/
 #include "common/earth.h"
 #include "common/rotation.h"
 
 #include "insmech.h"
 
+// ins机械编排，Mech：机械
+// PVA：pos，vel，attitude，三者放在一起，表示一个状态下的位置
+// 参数：前一个状态，当前状态
+// 前一个imu数据，当前imu数据
 void INSMech::insMech(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const IMU &imucur) {
 
     // perform velocity update, position updata and attitude update in sequence, irreversible order
@@ -60,7 +68,7 @@ void INSMech::velUpdate(const PVA &pvapre, PVA &pvacur, const IMU &imupre, const
 
     // b系比力积分项
     // velocity increment due to the specific force
-    d_vfb = imucur.dvel + temp1 + temp2 + temp3;
+    d_vfb = imucur.dvel + temp1 + temp2 + temp3; // b系：本体系
 
     // 比力积分项投影到n系
     // velocity increment dut to the specfic force projected to the n-frame

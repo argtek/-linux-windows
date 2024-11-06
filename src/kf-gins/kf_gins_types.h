@@ -29,26 +29,30 @@
 
 #include "common/angle.h"
 
-typedef struct Attitude {
+typedef struct Attitude
+{
     Eigen::Quaterniond qbn;
     Eigen::Matrix3d cbn;
     Eigen::Vector3d euler;
 } Attitude;
 
-typedef struct PVA {
+typedef struct PVA
+{
     Eigen::Vector3d pos;
     Eigen::Vector3d vel;
     Attitude att;
 } PVA;
 
-typedef struct ImuError {
+typedef struct ImuError
+{
     Eigen::Vector3d gyrbias;
     Eigen::Vector3d accbias;
     Eigen::Vector3d gyrscale;
     Eigen::Vector3d accscale;
 } ImuError;
 
-typedef struct NavState {
+typedef struct NavState
+{
     Eigen::Vector3d pos;
     Eigen::Vector3d vel;
     Eigen::Vector3d euler;
@@ -56,17 +60,19 @@ typedef struct NavState {
     ImuError imuerror;
 } NavState;
 
-typedef struct ImuNoise {
-    Eigen::Vector3d gyr_arw;
+typedef struct ImuNoise
+{
+    Eigen::Vector3d gyr_arw; // rw: random walk ，随机游走噪声
     Eigen::Vector3d acc_vrw;
-    Eigen::Vector3d gyrbias_std;
+    Eigen::Vector3d gyrbias_std; // std:标准差，描述测量值和均值的误差
     Eigen::Vector3d accbias_std;
     Eigen::Vector3d gyrscale_std;
     Eigen::Vector3d accscale_std;
     double corr_time;
 } ImuNoise;
 
-typedef struct GINSOptions {
+typedef struct GINSOptions
+{
 
     // 初始状态和状态标准差
     // initial state and state standard deviation
@@ -79,9 +85,10 @@ typedef struct GINSOptions {
 
     // 安装参数
     // install parameters
-    Eigen::Vector3d antlever = {0, 0, 0};
+    Eigen::Vector3d antlever = { 0, 0, 0 }; // 天线安装，主要是天线和IMU模块之间的位置，这个会造成误差
 
-    void print_options() {
+    void print_options()
+    {
         std::cout << "---------------KF-GINS Options:---------------" << std::endl;
 
         // 打印初始状态
@@ -94,13 +101,13 @@ typedef struct GINSOptions {
         std::cout << '\t' << "- initial velocity: " << initstate.vel.transpose() << " [m/s] " << std::endl;
         std::cout << '\t' << "- initial attitude: " << initstate.euler.transpose() * R2D << " [deg] " << std::endl;
         std::cout << '\t' << "- initial gyrbias : " << initstate.imuerror.gyrbias.transpose() * R2D * 3600
-                  << " [deg/h] " << std::endl;
+            << " [deg/h] " << std::endl;
         std::cout << '\t' << "- initial accbias : " << initstate.imuerror.accbias.transpose() * 1e5 << " [mGal] "
-                  << std::endl;
+            << std::endl;
         std::cout << '\t' << "- initial gyrscale: " << initstate.imuerror.gyrscale.transpose() * 1e6 << " [ppm] "
-                  << std::endl;
+            << std::endl;
         std::cout << '\t' << "- initial accscale: " << initstate.imuerror.accscale.transpose() * 1e6 << " [ppm] "
-                  << std::endl;
+            << std::endl;
 
         // 打印初始状态标准差
         // print initial state STD
@@ -108,15 +115,15 @@ typedef struct GINSOptions {
         std::cout << '\t' << "- initial position std: " << initstate_std.pos.transpose() << " [m] " << std::endl;
         std::cout << '\t' << "- initial velocity std: " << initstate_std.vel.transpose() << " [m/s] " << std::endl;
         std::cout << '\t' << "- initial attitude std: " << initstate_std.euler.transpose() * R2D << " [deg] "
-                  << std::endl;
+            << std::endl;
         std::cout << '\t' << "- initial gyrbias std: " << initstate_std.imuerror.gyrbias.transpose() * R2D * 3600
-                  << " [deg/h] " << std::endl;
+            << " [deg/h] " << std::endl;
         std::cout << '\t' << "- initial accbias std: " << initstate_std.imuerror.accbias.transpose() * 1e5 << " [mGal] "
-                  << std::endl;
+            << std::endl;
         std::cout << '\t' << "- initial gyrscale std: " << initstate_std.imuerror.gyrscale.transpose() * 1e6
-                  << " [ppm] " << std::endl;
+            << " [ppm] " << std::endl;
         std::cout << '\t' << "- initial accscale std: " << initstate_std.imuerror.accscale.transpose() * 1e6
-                  << " [ppm] " << std::endl;
+            << " [ppm] " << std::endl;
 
         // 打印IMU噪声参数
         // print IMU noise parameters
@@ -124,7 +131,7 @@ typedef struct GINSOptions {
         std::cout << '\t' << "- arw: " << imunoise.gyr_arw.transpose() * R2D * 60 << " [deg/sqrt(h)] " << std::endl;
         std::cout << '\t' << "- vrw: " << imunoise.acc_vrw.transpose() * 60 << " [m/s/sqrt(h)] " << std::endl;
         std::cout << '\t' << "- gyrbias  std: " << imunoise.gyrbias_std.transpose() * R2D * 3600 << " [deg/h] "
-                  << std::endl;
+            << std::endl;
         std::cout << '\t' << "- accbias  std: " << imunoise.accbias_std.transpose() * 1e5 << " [mGal] " << std::endl;
         std::cout << '\t' << "- gyrscale std: " << imunoise.gyrscale_std.transpose() * 1e6 << " [ppm] " << std::endl;
         std::cout << '\t' << "- accscale std: " << imunoise.accscale_std.transpose() * 1e6 << " [ppm] " << std::endl;

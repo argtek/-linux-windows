@@ -31,6 +31,7 @@ endtime: -1
 # initial position, latitude, longitude, altitude. [deg, deg, m]
 initpos: [ 30.4447873701, 114.4718632047, 20.899 ]
 
+# 地球表面，局部坐标系
 # 初始速度, 北向速度, 东向速度, 垂向速度
 # initial velocity, speed in the directions of north, east and down. [m/s, m/s, m/s]
 initvel: [ 0.0, 0.0, 0.0 ]
@@ -46,6 +47,7 @@ initaccbias: [ 0, 0, 0 ]    # [mGal]
 initgyrscale: [ 0, 0, 0 ]   # [ppm]
 initaccscale: [ 0, 0, 0 ]   # [ppm]
 
+# 理论推导和传感器测量值两者都有误差，两者占据不同权值。真值（理论推导）
 # 初始状态标准差
 # initial state std
 # 初始位置标准差, 导航坐标系下 北向, 东向和垂向
@@ -69,6 +71,7 @@ initattstd: [ 0.003, 0.003, 0.023 ]
 #initsgstd: [ 300, 300, 300 ]    # [ppm]
 #initsastd: [ 300, 300, 300 ]    # [ppm]
 
+# 为什么叫做建模：因为这是厂家一点点测试，不多的使用级数，一点点添加项，逼近原始值
 # IMU噪声建模参数, IMU的三个轴
 # IMU noise parameters
 imunoise:

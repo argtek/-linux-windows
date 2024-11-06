@@ -29,7 +29,8 @@ using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 
-typedef struct GNSS {
+typedef struct GNSS
+{
     double time;
 
     Vector3d blh;
@@ -38,7 +39,8 @@ typedef struct GNSS {
     bool isvalid;
 } GNSS;
 
-typedef struct IMU {
+typedef struct IMU
+{
     double time;
     double dt;
 
@@ -48,7 +50,8 @@ typedef struct IMU {
     double odovel;
 } IMU;
 
-typedef struct Pose {
+typedef struct Pose
+{
     Matrix3d R;
     Vector3d t;
 } Pose;

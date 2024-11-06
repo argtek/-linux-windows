@@ -33,6 +33,7 @@ using Eigen::Vector3d;
 class Rotation {
 
 public:
+    // 旋转矩阵转换成为四元数
     static Quaterniond matrix2quaternion(const Matrix3d &matrix) {
         return Quaterniond(matrix);
     }
@@ -72,9 +73,10 @@ public:
         return matrix2euler(quaternion.toRotationMatrix());
     }
 
+    // 向量转换成为四元数
     static Quaterniond rotvec2quaternion(const Vector3d &rotvec) {
-        double angle = rotvec.norm();
-        Vector3d vec = rotvec.normalized();
+        double angle = rotvec.norm(); 
+        Vector3d vec = rotvec.normalized(); // norm():归一化，向量长度变成1
         return Quaterniond(Eigen::AngleAxisd(angle, vec));
     }
 
