@@ -27,6 +27,13 @@
 #include <yaml-cpp/yaml.h>
  /////////////////////////////////c++17才有的头文件
 #include <filesystem>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif // _WIN32
+
+
 
 #include "common/angle.h"
 #include "fileio/filesaver.h"
@@ -34,6 +41,8 @@
 #include "fileio/imufileloader.h"
 
 #include "kf-gins/gi_engine.h"
+
+int count = 0;
 
 bool loadConfig(YAML::Node& config, GINSOptions& options);
 void writeNavResult(double time, NavState& navstate, FileSaver& navfile, FileSaver& imuerrfile);
@@ -93,14 +102,17 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // 读取配置参数到GINSOptioins中，并构造GIEngine
-    // load configuration parameters to GINSOptioins
+    // 读取配置文件里面的惯导初始状态
+    
+        // 读取配置参数到GINSOptioins中，并构造GIEngine
+        // load configuration parameters to GINSOptioins
     GINSOptions options;
     if (!loadConfig(config, options))
     {
         std::cout << "Error occurs in the configuration file!" << std::endl;
         return -1;
     }
+    
     /*
      * 将gnss和imu数据分成两个文件，这两个文件之间依赖时间戳联系，确定先后
      */
@@ -163,9 +175,12 @@ int main(int argc, char* argv[])
     GnssFileLoader gnssfile(gnsspath);
     ImuFileLoader imufile(imupath, imudatalen, imudatarate); // 指定路径，每行读取的长度，一秒钟读取多少行
 
+    // 惯导模块初始化
+    
     // 构造GIEngine
     // Construct GIEngine
     GIEngine giengine(options); //GI:GNSS,INS
+    
 
     // 构造输出文件
     // construct output file
@@ -185,6 +200,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+
     // 检查处理时间
     // check process time
     if (endtime < 0)
@@ -196,6 +212,9 @@ int main(int argc, char* argv[])
         std::cout << "Process time ERROR!" << std::endl;
         return -1;
     }
+
+    /***********************************两个来源数据时间戳对齐*********************************************/
+    /******************************************************************************************************/
     /* 这里面的数据对齐，就是将两个数据源的时间对齐，保证GNSS和IMU都是对同一状态的描述
      *  对齐到同一时间，两个数据源对齐到同一时间
     */
@@ -235,48 +254,76 @@ int main(int argc, char* argv[])
     int percent = 0, lastpercent = 0;
     double interval = endtime - starttime;
 
+    /*********************循环添加传感器数据，一次处理一个数据*********************************************/
+    /******************************************************************************************************/
     while (true)
     {
-        // 当前IMU状态时间新于GNSS时间时，读取并添加新的GNSS数据到GIEngine
-        // load new gnssdata when current state time is newer than GNSS time and add it to GIEngine
-        if (gnss.time < imu_cur.time && !gnssfile.isEof())
+
+        // 数据读取
         {
-            gnss = gnssfile.next();
-            giengine.addGnssData(gnss);
+            // 当前IMU状态时间新于GNSS时间时，读取并添加新的GNSS数据到GIEngine
+            // load new gnssdata when current state time is newer than GNSS time and add it to GIEngine
+            if (gnss.time < imu_cur.time && !gnssfile.isEof())
+            {
+                gnss = gnssfile.next();
+                giengine.addGnssData(gnss);
+            }
+
+            // 读取并添加新的IMU数据到GIEngine
+            // load new imudata and add it to GIEngine
+            imu_cur = imufile.next();
+            if (imu_cur.time > endtime || imufile.isEof())
+            {
+                break;
+            }
         }
 
-        // 读取并添加新的IMU数据到GIEngine
-        // load new imudata and add it to GIEngine
-        imu_cur = imufile.next();
-        if (imu_cur.time > endtime || imufile.isEof())
+        // 传感器数据循环添加，一次只处理一个数据
         {
-            break;
+            /*IMU,GNSS数据，add，一次只添加一个，只处理一个数据*/
+            giengine.addImuData(imu_cur);
         }
-        giengine.addImuData(imu_cur);
 
-        // 处理新的IMU数据
-        // process new imudata
-        giengine.newImuDataProcess();
-
-        // 获取当前时间，IMU状态和协方差
-        // get current timestamp, navigation state and covariance
-        timestamp = giengine.timestamp();
-        navstate = giengine.getNavState();
-        cov = giengine.getCovariance(); // 协方差，描述两个样本空间x,y之间的相对关系的两，正值，正相关
-
-        // 保存处理结果
-        // save processing results
-        writeNavResult(timestamp, navstate, navfile, imuerrfile);
-        writeSTD(timestamp, cov, stdfile);
-
-        // 显示处理进展
-        // display processing progress
-        percent = int((imu_cur.time - starttime) / interval * 100);
-        if (percent - lastpercent >= 1)
+        // 处理模块总入口
+        // imu数据处理，一次只处理一个数据
         {
-            std::cout << " - Processing: " << std::setw(3) << percent << "%\r" << std::flush;
-            lastpercent = percent;
+            // 处理新的IMU数据
+            // process new imudata
+            giengine.newImuDataProcess();
         }
+
+        // 数据输出相关
+        {
+            // 获取当前时间，IMU状态和协方差
+            // get current timestamp, navigation state and covariance
+            timestamp = giengine.timestamp();
+            navstate = giengine.getNavState();
+            cov = giengine.getCovariance(); // 协方差，描述两个样本空间x,y之间的相对关系的两，正值，正相关
+
+            // 保存处理结果
+            // save processing results
+            writeNavResult(timestamp, navstate, navfile, imuerrfile);
+            writeSTD(timestamp, cov, stdfile);
+        }
+
+
+        // 进度显示
+        {
+            // 显示处理进展
+            // display processing progress
+            percent = int((imu_cur.time - starttime) / interval * 100);
+            if (percent - lastpercent >= 1)
+            {
+                std::cout << " - Processing: " << std::setw(3) << percent << "%\r" << std::flush;
+                lastpercent = percent;
+            }
+        }
+
+#ifdef _WIN32
+        Sleep(1000);
+#else
+        sleep(1000);
+#endif // _DEBUG
     }
 
     // 关闭打开的文件
@@ -497,6 +544,22 @@ void writeNavResult(double time, NavState& navstate, FileSaver& navfile, FileSav
     result.push_back(navstate.euler[1] * R2D);
     result.push_back(navstate.euler[2] * R2D);
     navfile.dump(result);
+
+    {
+        count++;
+        if (count == 1)
+            std::cout << "timestamp    Vec3d:Pos     Vel3d:Pos      euler" << std::endl;
+        std::cout << count<<":  " << (time                   )<< ",    ";
+        std::cout << (navstate.pos[0] * R2D  )<< ", ";
+        std::cout << (navstate.pos[1] * R2D  )<< ", ";
+        std::cout << (navstate.pos[2]        )<< ",   ";
+        std::cout << (navstate.vel[0]        )<< ", ";
+        std::cout << (navstate.vel[1]        )<< ", ";
+        std::cout << (navstate.vel[2]        )<< ",   ";
+        std::cout << (navstate.euler[0] * R2D)<< ", ";
+        std::cout << (navstate.euler[1] * R2D)<< ", ";
+        std::cout << (navstate.euler[2] * R2D) << std::endl;
+    }
 
     // 保存IMU误差
     // save IMU error

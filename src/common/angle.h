@@ -30,19 +30,19 @@ class Angle {
 
 public:
     static double rad2deg(double rad) {
-        return rad * R2D;
+        return (float)(rad * R2D);
     }
 
     static double deg2rad(double deg) {
-        return deg * D2R;
+        return (float)(deg * D2R);
     }
 
     static float rad2deg(float rad) {
-        return rad * R2D;
+        return (float)(rad * R2D);
     }
 
     static float deg2rad(float deg) {
-        return deg * D2R;
+        return (float)(deg * D2R);
     }
 
     template <typename T, int Rows, int Cols>
